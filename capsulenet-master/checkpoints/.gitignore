@@ -1,0 +1,9 @@
+*
+!.gitignore
+!fmnist_capsnet_10_epoch.pth
+!fmnist_capsnet_50_epoch.pth
+!fmnist_decoder_50_epoch.pth
+
+!mnist_capsnet_10_epoch.pth
+!mnist_capsnet_50_epoch.pth
+!mnist_decoder_50_epoch.pth

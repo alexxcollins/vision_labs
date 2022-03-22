@@ -36,9 +36,9 @@ class PascalVOC2012DatasetObjectDetection(data.Dataset):
                          transforms.ToPILImage(),
                          #transforms.Resize(img_size),
                          transforms.ToTensor(),
-                         #transforms.Normalize(mean=[0.407, 0.457, 0.485],
-                         #                     std=[0.229,0.224,0.225])])
-                         ])
+                         transforms.Normalize(mean=[0.407, 0.457, 0.485],
+                                             std=[0.229,0.224,0.225])
+                                ])
         img = t_(img)
         # returns image tensor (CxHxW)
         return img
@@ -48,7 +48,7 @@ class PascalVOC2012DatasetObjectDetection(data.Dataset):
     def load_img(self, idx):
         # im = np.array(PILImage.open(os.path.join(self.dir, self.imgs[idx])))
         im = np.array(PILImage.open(self.imgs[idx]))
-        im = im[:,:,::-1]
+        im = im[:,:,::-1]  #im has shape [H * W * C], we reverse order the channels. Why?!
         im = self.transform_img(im)
         return im
 
@@ -133,113 +133,6 @@ class PascalVOC2012DatasetObjectDetection(data.Dataset):
         label['boxes'] = torch.as_tensor(bboxes)
         return label       
 
-    def extract_bboxes_pascal3(self, idx, list_of_classes):
-        
-        fname = Path(self.dir_label)/self.imgs[idx].with_suffix('.xml').name
-        classes = []
-        bboxes = []
-        
-        pascal_voc_xml_doc = minidom.parseString(fname.read_text())
-        # This returns the list of objects tagged 'name'
-        nameval = pascal_voc_xml_doc.getElementsByTagName('name')
-        # get the number of total objects in the image
-        good_class_ids = []
-        
-        for id, n in enumerate(nameval):
-            name = n.firstChild.nodeValue
-            # some classes not in Pascal VOC data set (e.g.head)
-            if name in list_of_classes.keys():
-                good_class_ids.append(id)                
-                classes.append(list_of_classes[name])
-                
-        coords = ['xmin', 'ymin', 'xmax', 'ymax']
-        c_dict = dict(zip(coords, [[],[],[],[],[]]))
-        for c in coords:
-            val = pascal_voc_xml_doc.getElementsByTagName(c)
-            for id in good_class_ids:
-                m = float(val[id].firstChild.nodeValue)
-                c_dict[c].append(m)
-        
-        # put the coordinates together
-        for i in range(len(good_class_ids)):
-            obj = [c_dict['xmin'][i], c_dict['ymin'][i],
-                   c_dict['xmax'][i], c_dict['ymax'][i]]
-            bboxes.append(obj)
-            
-        # output a dictionary with classes and bboxes
-        label={}
-        label['labels'] = torch.as_tensor(classes, dtype=torch.int64)
-        label['boxes'] = torch.as_tensor(bboxes)
-        return label
-
-
-    
-    
-    def extract_bboxes_pascal2(self, idx, list_of_classes):
-        # fname = self.imgs[idx].split('.')[0] + '.xml'
-        fname = self.imgs[idx].with_suffix('.xml').name
-        fname = os.path.join(self.dir_label, fname)
-        classes = []
-        bboxes = []
-        pascal_voc_xml_doc = minidom.parseString(fname.read_text())
-        # This returns the list of objects tagged 'name'
-        nameval = pascal_voc_xml_doc.getElementsByTagName('name')
-        # get the number of total objects in the image
-        total_objects = len(nameval)
-        wrong_class_ids = []
-        good_class_id = []
-        for id, n in enumerate(nameval):
-            name = n.firstChild.nodeValue
-            # some classes not in Pascal VOC data set (e.g.head)
-            if name not in list_of_classes.keys():
-                total_objects -=1
-                wrong_class_ids.append(id) 
-            else:
-                good_class_id.append(id)                
-                classes.append(list_of_classes[name])
-
-        xminvals = []
-        yminvals = []
-        xmaxvals = []
-        ymaxvals = []
-        # this returnx xmin, ymin, xmax and ymax values of the bbox
-        xminval = pascal_voc_xml_doc.getElementsByTagName('xmin')
-        yminval = pascal_voc_xml_doc.getElementsByTagName('ymin')
-        xmaxval = pascal_voc_xml_doc.getElementsByTagName('xmax')
-        ymaxval = pascal_voc_xml_doc.getElementsByTagName('ymax')
-        # get xmins for all objects
-        for idx, xmincode in enumerate(xminval):
-            xmin = float(xmincode.firstChild.nodeValue)
-            if idx in good_class_id:
-                xminvals.append(xmin)
-
-        # get ymins for all objects
-        for idx, ymincode in enumerate(yminval):
-            ymin = float(ymincode.firstChild.nodeValue)
-            if idx in good_class_id:
-                yminvals.append(ymin)
-
-        # get xmaxs for all objects
-        for idx, xmaxcode in enumerate(xmaxval):
-            xmax = float(xmaxcode.firstChild.nodeValue)
-            if idx in good_class_id:
-                xmaxvals.append(xmax)
-
-        # get ymaxs for all objects
-        for idx, ymaxcode in enumerate(ymaxval):
-            ymax = float(ymaxcode.firstChild.nodeValue)
-            if idx in good_class_id:
-                ymaxvals.append(ymax)
-
-        # put the coordinates together
-        for i in range(total_objects):
-            obj = [xminvals[i], yminvals[i],xmaxvals[i],ymaxvals[i]]
-            bboxes.append(obj)
-        # output a dictionary with classes and bboxes
-        label={}
-        label['labels'] = torch.as_tensor(classes, dtype=torch.int64)
-        label['boxes'] = torch.as_tensor(bboxes)
-        return label
 
     #'magic' method: size of the dataset
     def __len__(self):
